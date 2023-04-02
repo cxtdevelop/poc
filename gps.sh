@@ -37,5 +37,5 @@ echo "123.108.10.200/konimexbi2/getparam.php?IMEI=${macVal}&GPSTime=${gpsTime}&$
 curlVal=$(curl -v "123.108.10.200/konimexbi2/getparam.php?IMEI=${macVal}&GPSTime=${gpsTime}&${gpsTPVVal}")
 curlVal=$(curl -v "123.108.10.53/blackbox/index.php?IMEI=${macVal}&GPSTime=${gpsTime}&${gpsTPVVal}")
 echo $curlVal
-sleep 4
+sleep 5
 done
