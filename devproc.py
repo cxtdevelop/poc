@@ -24,6 +24,7 @@ logging.getLogger('').addHandler(console)
 #Setting varibael
 deviceID = ""
 routeID = ""
+APIdata = ""
 curr_latitude = 0
 curr_longitude = 0
 curr_speed = 0
@@ -46,6 +47,19 @@ control_url = ''
 local_url = 'http://127.0.0.1/api/'
 rx040_url = ''
 rx112_url = ''
+
+
+def sendapi(api_url,payload):
+  try:
+    requests.post(api_url, data=json.dumps(payload), timeout=2)
+    logging.warning("Success connect to : %s " % (api_url))
+  except requests.Timeout:
+    logging.warning("Timeout connect to : %s " % (api_url))
+    # back off and retry
+    pass
+  except requests.ConnectionError:
+    logging.warning("Connection Error to : %s " % (api_url))
+    pass
 
 
 
@@ -71,24 +85,6 @@ def send(api_url,jobs,droute,ddest):
     logging.warning("Connection Error to : %s " % (api_url))
     pass
 
-def getPositionTable():
-  global curr_latitude
-  global curr_longitude
-  global curr_speed
-  global curr_track
-  dbcon = db.cursor()
-  logging.warning("========================================================")  
-  logging.warning("Get Table Position : %s " % (deviceID))  
-  dbcon.callproc('sp_vehicle', ['GET_POSITION', deviceID, routeID, curr_latitude, curr_longitude, curr_speed, curr_track, curr_destination])
-  for result in dbcon.stored_results():
-    records = result.fetchall()
-    for record in records:
-      curr_latitude = record[4]
-      curr_longitude = record[5]
-      curr_speed = record[6]
-      curr_track = record[7]
-  db.commit()
-  dbcon.close()
 
 def getDistance(lati1, long1, lati2, long2):
   R = 6373000       # approximate radius of earth in m
@@ -104,95 +100,6 @@ def getDistance(lati1, long1, lati2, long2):
   return resDistance
 
 
-def makeDecision():
-  global DistanceAOld2
-  global DistanceAOld1 
-  global DistanceANew
-  global DistanceBOld2
-  global DistanceBOld1 
-  global DistanceBNew
-  global DistanceR040Old2
-  global DistanceR040Old1
-  global DistanceR040New
-  global DistanceR112Old2
-  global DistanceR112Old1
-  global DistanceR112New
-
-  DistanceANew = int(getDistance(a_latitude, a_longitude, curr_latitude, curr_longitude))
-  DistanceBNew = int(getDistance(b_latitude, b_longitude, curr_latitude, curr_longitude))
-  DistanceR040New = int(getDistance(rx040_latitude, rx040_longitude, curr_latitude, curr_longitude))
-  DistanceR112New = int(getDistance(rx112_latitude, rx112_longitude, curr_latitude, curr_longitude))
-  logging.warning("=====================================================================")
-  logging.warning("My location at latitude : %s ; longitude : %s With speed : %s & Track : %s" % (curr_latitude, curr_longitude, curr_speed, curr_track))
-    
-  if ((DistanceANew - DistanceAOld1) > 10) or ((DistanceBNew - DistanceBOld1) > 10): # Ada pergerakan 
-    DistanceAOld2 = DistanceAOld1 
-    DistanceAOld1 = DistanceANew
-    DistanceBOld2 = DistanceBOld1 
-    DistanceBOld1 = DistanceBNew
-    DistanceR040Old2 = DistanceR040Old1
-    DistanceR040Old1 = DistanceR040New
-    DistanceR112Old2 = DistanceR112Old1
-    DistanceR112Old1 = DistanceR112New
-    if DistanceANew <= DistanceAR112:
-      TayoLocation = "SELATAN"
-    elif DistanceANew > DistanceAR040:
-      TayoLocation = "UTARA"  
-    elif (DistanceANew < DistanceAR040) and (DistanceANew > DistanceAR112):
-      TayoLocation = "TENGAH"
-    else:
-      TayoLocation = "Unknown"
-
-    if DistanceAOld2 == 0:
-      TayoDirection = "Unknown"
-    elif DistanceAOld1 > DistanceAOld2:
-      TayoDirection = "RAJAWALI"
-    else:
-      TayoDirection = "PURABAYA"
-          
-    TayoDestination = TayoDirection + "_" + TayoLocation
-
-    if (TayoDestination == "RAJAWALI_SELATAN") and (DistanceR112New < 200):
-      logging.warning("11111111111111111111 Duel ON %s " % (rx112_name))
-      send(control_url, "REQ_DUELON", "RXS112", TayoDestination)
-         
-    if (TayoDestination == "RAJAWALI_TENGAH") and (DistanceR112New < 200):
-      logging.warning("00000000000000000000 Duel OFF %s " % (rx112_name))
-      send(control_url, "REQ_DUELOFF", "RXS112", TayoDestination)
-
-    if (TayoDestination == "RAJAWALI_TENGAH") and (DistanceR040New < 200):
-      logging.warning("11111111111111111111 Duel ON %s " % (rx040_name))
-      send(control_url, "REQ_DUELON", "RXS040", TayoDestination)
-            
-    if (TayoDestination == "RAJAWALI_UTARA") and (DistanceR040New < 200):
-      logging.warning("00000000000000000000 Duel OFF  %s " % (rx040_name))
-      send(control_url, "REQ_DUELOFF", "RXS040", TayoDestination)
-
-    if (TayoDestination == "PURABAYA_UTARA") and (DistanceR040New < 200):
-      logging.warning("11111111111111111111 Duel ON  %s " % (rx040_name))  
-      send(control_url, "REQ_DUELON", "RXS040", TayoDestination)
-
-    if (TayoDestination == "PURABAYA_TENGAH") and (DistanceR040New < 200):
-      logging.warning("00000000000000000000 Duel OFF %s " % (rx040_name))
-      send(control_url, "REQ_DUELOFF", "RXS040", TayoDestination)
-            
-    if (TayoDestination == "PURABAYA_TENGAH") and (DistanceR112New < 200):
-      logging.warning("11111111111111111111 Duel ON %s " % (rx112_name))
-      send(control_url, "REQ_DUELON", "RXS112", TayoDestination)
-
-    if (TayoDestination == "PURABAYA_SELATAN") and (DistanceR112New < 200):
-      logging.warning("00000000000000000000 Duel OFF %s " % (rx112_name))
-      send(control_url, "REQ_DUELOFF", "RXS112", TayoDestination)
-        
-#    logging.warning("=====================================================================")
-#    logging.warning("My location at latitude : %s ; longitude : %s With speed : %s & Track : %s" % (curr_latitude, curr_longitude, curr_speed, curr_track))
-    logging.warning("Distance from A terminal %s = %s => %s => %s " % (a_name, DistanceANew, DistanceAOld1, DistanceAOld2))
-    logging.warning("Distance from B terminal %s = %s => %s => %s " % (b_name, DistanceBNew, DistanceBOld1, DistanceBOld2))
-    logging.warning("Distance from %s = %s => %s => %s" % (rx112_name, DistanceR112New, DistanceR112Old1, DistanceR112Old2))
-    logging.warning("Distance from %s = %s => %s => %s " % (rx040_name, DistanceR040New, DistanceR040Old1, DistanceR040Old2))
-    logging.warning("Destination = %s " % (TayoDestination))  
-
-
 
 #######Start Main Code ################################################################################################
 #MySQL connect
@@ -200,7 +107,7 @@ db = mysql.connector.connect(host="localhost", user="vehicle", passwd="DBvehicle
 dbcon = db.cursor()
 
 #Get Server Control ID ########################
-dbcon.callproc('sp_vehicle', ['GET_SERVER', deviceID, routeID, curr_latitude, curr_longitude, curr_speed, curr_track, curr_destination])
+dbcon.callproc('sp_vehicle', ['GET_SERVER', 'deviceID', 'routeID', 1, 2, 3, 4, 5, 6, 7, 8])
 for result in dbcon.stored_results():
   records = result.fetchall()
   for record in records:
@@ -208,7 +115,7 @@ for result in dbcon.stored_results():
 logging.warning("Got Server on : %s " % (control_url))
 
 #Get Device ID ########################
-dbcon.callproc('sp_vehicle', ['GET_ID', deviceID, routeID, curr_latitude, curr_longitude, curr_speed, curr_track, curr_destination])
+dbcon.callproc('sp_vehicle', ['GET_ID', 'deviceID', 'routeID', 1, 2, 3, 4, 5, 6, 7, 8])
 for result in dbcon.stored_results():
   records = result.fetchall()
   for record in records:
@@ -218,7 +125,7 @@ logging.warning("Starting: %s === : %s on %s" % (deviceID, deviceName, sys.platf
 
 #Get Simpang Profile ########################
 routeID = 40
-dbcon.callproc('sp_vehicle', ['GET_SIMPANG', deviceID, routeID, curr_latitude, curr_longitude, curr_speed, curr_track, curr_destination])
+dbcon.callproc('sp_vehicle', ['GET_SIMPANG', 'deviceID', routeID, 1, 2, 3, 4, 5, 6, 7, 8])
 for result in dbcon.stored_results():
   records = result.fetchall()
   for record in records:
@@ -230,7 +137,7 @@ for result in dbcon.stored_results():
     rx040_url = record[7]
 
 routeID = 112
-dbcon.callproc('sp_vehicle', ['GET_SIMPANG', deviceID, routeID, curr_latitude, curr_longitude, curr_speed, curr_track, curr_destination])
+dbcon.callproc('sp_vehicle', ['GET_SIMPANG', 'deviceID', routeID, 1, 2, 3, 4, 5, 6, 7, 8])
 for result in dbcon.stored_results():
   records = result.fetchall()
   for record in records:
@@ -244,7 +151,7 @@ for result in dbcon.stored_results():
 ## Code for Transmitter / Bus Tayo  ################################################################################################
 routeID = deviceID[:4]
 if routeID in ['TXR1', 'TXR2', 'DTR1']:
-  dbcon.callproc('sp_vehicle', ['GET_ROUTE', deviceID, routeID, curr_latitude, curr_longitude, curr_speed, curr_track, curr_destination])
+  dbcon.callproc('sp_vehicle', ['GET_ROUTE', 'deviceID', routeID, 1, 2, 3, 4, 5, 6, 7, 8])
   for result in dbcon.stored_results():
     records = result.fetchall()
     for record in records:
@@ -260,6 +167,21 @@ if routeID in ['TXR1', 'TXR2', 'DTR1']:
   DistanceBR112 = int(getDistance(b_latitude, b_longitude, rx112_latitude, rx112_longitude))  
   logging.warning("Distance A terminal %s to %s = %s ; to %s = %s" % (a_name, rx112_name, DistanceAR112, rx040_name, DistanceAR040))
   logging.warning("Distance B terminal %s to %s = %s ; to %s = %s" % (b_name, rx112_name, DistanceBR112, rx040_name, DistanceBR040))
+  payload = {
+    'task':'TX_REGISTER',
+    'vehicle': deviceID,
+    'route': deviceName,
+    'plat': 0,
+    'plon': 0,
+    'pspeed': 0,
+    'ptrack': 0,
+    'dista': 0,
+    'distb': 0,
+    'dist040': 0,
+    'dist112': 0
+  }
+  sendapi(control_url, payload)
+
   
 #Code for Receiver / LC Simpang######################################################################################
 if deviceID[:2] in ['RX']:
@@ -300,8 +222,8 @@ try:
       dtime = sock_data["dtime"] 
       dlat = float(sock_data["dlat"]) 
       dlon = float(sock_data["dlon"])
-      dspeed = sock_data["dspeed"] 
-      dtrack = sock_data["dtrack"] 
+      dspeed = float(sock_data["dspeed"]) 
+      dtrack = float(sock_data["dtrack"]) 
       logging.warning("%s location at latitude : %s ; longitude : %s With speed : %s & Track : %s" % (dtime, dlat, dlon, dspeed, dtrack))
       
       DistanceANew = int(getDistance(a_latitude, a_longitude, dlat, dlon))
@@ -314,7 +236,91 @@ try:
       
       if ((DistanceANew - DistanceAOld1) > 10) or ((DistanceBNew - DistanceBOld1) > 10): # Ada pergerakan 
         logging.warning("Bergerak >>>>>>>>>>>>")
-  
+        DistanceAOld2 = DistanceAOld1 
+        DistanceAOld1 = DistanceANew
+        DistanceBOld2 = DistanceBOld1 
+        DistanceBOld1 = DistanceBNew
+        DistanceR040Old2 = DistanceR040Old1
+        DistanceR040Old1 = DistanceR040New
+        DistanceR112Old2 = DistanceR112Old1
+        DistanceR112Old1 = DistanceR112New
+
+        if DistanceANew <= DistanceAR112:
+          TayoLocation = "SELATAN"
+        elif DistanceANew > DistanceAR040:
+          TayoLocation = "UTARA"  
+        elif (DistanceANew < DistanceAR040) and (DistanceANew > DistanceAR112):
+          TayoLocation = "TENGAH"
+        else:
+          TayoLocation = "Unknown"
+
+        if DistanceAOld2 == 0:
+          TayoDirection = "Unknown"
+        elif DistanceAOld1 > DistanceAOld2:
+          TayoDirection = "RAJAWALI"
+        else:
+          TayoDirection = "PURABAYA"
+          
+        TayoDestination = TayoDirection + "_" + TayoLocation
+
+
+
+        if (TayoDestination == "RAJAWALI_SELATAN") and (DistanceR112New < 200):
+          logging.warning("11111111111111111111 Duel ON %s " % (rx112_name))
+          #send(control_url, "REQ_DUELON", "RXS112", TayoDestination)
+         
+        if (TayoDestination == "RAJAWALI_TENGAH") and (DistanceR112New < 200):
+          logging.warning("00000000000000000000 Duel OFF %s " % (rx112_name))
+          #send(control_url, "REQ_DUELOFF", "RXS112", TayoDestination)
+
+        if (TayoDestination == "RAJAWALI_TENGAH") and (DistanceR040New < 200):
+          logging.warning("11111111111111111111 Duel ON %s " % (rx040_name))
+          #send(control_url, "REQ_DUELON", "RXS040", TayoDestination)
+            
+        if (TayoDestination == "RAJAWALI_UTARA") and (DistanceR040New < 200):
+          logging.warning("00000000000000000000 Duel OFF  %s " % (rx040_name))
+          #send(control_url, "REQ_DUELOFF", "RXS040", TayoDestination)
+
+        if (TayoDestination == "PURABAYA_UTARA") and (DistanceR040New < 200):
+          logging.warning("11111111111111111111 Duel ON  %s " % (rx040_name))  
+          #send(control_url, "REQ_DUELON", "RXS040", TayoDestination)
+
+        if (TayoDestination == "PURABAYA_TENGAH") and (DistanceR040New < 200):
+          logging.warning("00000000000000000000 Duel OFF %s " % (rx040_name))
+          #send(control_url, "REQ_DUELOFF", "RXS040", TayoDestination)
+            
+        if (TayoDestination == "PURABAYA_TENGAH") and (DistanceR112New < 200):
+          logging.warning("11111111111111111111 Duel ON %s " % (rx112_name))
+          #send(control_url, "REQ_DUELON", "RXS112", TayoDestination)
+
+        if (TayoDestination == "PURABAYA_SELATAN") and (DistanceR112New < 200):
+          logging.warning("00000000000000000000 Duel OFF %s " % (rx112_name))
+          #send(control_url, "REQ_DUELOFF", "RXS112", TayoDestination)
+
+        logging.warning("Distance from A terminal %s = %s => %s => %s " % (a_name, DistanceANew, DistanceAOld1, DistanceAOld2))
+        logging.warning("Distance from B terminal %s = %s => %s => %s " % (b_name, DistanceBNew, DistanceBOld1, DistanceBOld2))
+        logging.warning("Distance from %s = %s => %s => %s" % (rx112_name, DistanceR112New, DistanceR112Old1, DistanceR112Old2))
+        logging.warning("Distance from %s = %s => %s => %s " % (rx040_name, DistanceR040New, DistanceR040Old1, DistanceR040Old2))
+        logging.warning("Destination = %s " % (TayoDestination))  
+
+
+      else:
+        logging.warning("XXXXX Berhenti XXXXXXX")
+        
+      payload = {
+          'task':'TX_LOG',
+          'vehicle': deviceID,
+          'route': TayoDestination,
+          'plat': dlat,
+          'plon': dlon,
+          'pspeed': dspeed,
+          'ptrack': dtrack,
+          'dista': DistanceANew,
+          'distb': DistanceBNew,
+          'dist040': DistanceR040New,
+          'dist112': DistanceR112New
+        }
+      sendapi(control_url, payload)
    
 
 
