@@ -34,32 +34,5 @@ do
             "data_track":"'"$gpsTrack"'",
             "destination":"0"}'
 #    curl -d "${gpsSum}" -i http://127.0.0.1/api/
-
-    
-
-
-#    curl -d '{"task":"TX_PIPE",
-#            "vehicle": "PIPE",
-#            "route": "0",
-#            "data_latitude":"'"$gpsLat"'",
-#            "data_longitude":"'"$gpsLon"'",
-#            "data_speed":"'"$gpsSpeed"'",
-#            "data_track":"'"$gpsTrack"'",
-#            "destination":"0"}' \
-#    -i http://127.0.0.1/api/
-
-#    curl -d '{"task":"TX_LOG",
-#            "vehicle": "TXR103",
-#            "route": "0",
-#            "data_latitude":"'"$gpsLat"'",
-#            "data_longitude":"'"$gpsLon"'",
-#            "data_speed":"'"$gpsSpeed"'",
-#            "data_track":"'"$gpsTrack"'",
-#            "destination":"0"}' \
-#    -i http://36.66.208.123/api/
-
-
-
-
     sleep 3 
 done
