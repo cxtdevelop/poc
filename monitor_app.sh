@@ -29,7 +29,7 @@ if [ "$value" == "1" ]; then
    if pgrep python >/dev/null 2>&1; then
       echo "Application already running..."
       else
-         (python /home/vehicle/vetrans.py) &	
+         (python /home/vehicle/poc/devproc.py) &	
           echo "Application started...."
    fi
 fi
@@ -41,7 +41,7 @@ if [ "$value" == "1" ]; then
    if pgrep gpspipe.sh 2>&1; then
       echo "GPSPIPE already running..."
       else
-         (/home/vehicle/gpspipe.sh) &	
+         (/home/vehicle/poc/gpspipe.sh) &	
           echo "GPS started...."
    fi
 fi
