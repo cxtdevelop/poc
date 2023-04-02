@@ -20,13 +20,7 @@ return;
 }
 
 $task = $data['task'];
-$vehicle = $data['vehicle'];
-$route =  $data['route'];
-$latitude = $data['data_latitude'];
-$longitude = $data['data_longitude'];
-$speed = $data['data_speed'];
-$track = $data['data_track'];
-$destination = $data['destination'];
+
 
 create_log($data);
 $sqlMy = "INSERT INTO api_log (id, json_task) VALUES(REPLACE(UUID(),'-',''),'".json_encode($data)."')";
@@ -35,12 +29,23 @@ mysqli_query($connMy,$sqlMy);
 switch ($task) {
 	case "TX_REGISTER":
 	case "TX_LOG":
-	case "TX_PIPE":
-	case "BEACON":
-		$sqlMy = "CALL sp_vehicle('".$task."','".$vehicle."','".$route."',".$latitude.",".$longitude.",".$speed.",".$track.",'".$destination."')";
+	case "BEACON":	
+		$vehicle = $data['vehicle'];
+		$route = $data['route'];
+		$plat = $data['plat'];
+		$plon = $data['plon'];
+		$pspeed = $data['pspeed'];
+		$ptrack = $data['ptrack'];
+		$dista = $data['dista'];
+		$distb = $data['distb'];
+		$dist040 = $data['dist040'];
+		$dist112 = $data['dist112'];
+
+		$sqlMy = "CALL sp_vehicle('".$task."','".$vehicle."','".$route."',".$plat.",".$plon.",".$pspeed.",".$ptrack.",".$dista.",".$distb.",".$dist040.",".$dist112.")";
 		mysqli_query($connMy,$sqlMy);
 		create_log($sqlMy);
 	break;
+
 
 	case "REQ_DUELON":
 	case "REQ_DUELOFF":
