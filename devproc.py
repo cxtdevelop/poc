@@ -220,10 +220,17 @@ try:
 
     if task in ['TX_PIPE']:
       dtime = sock_data["dtime"] 
-      dlat = float(sock_data["dlat"]) 
-      dlon = float(sock_data["dlon"])
-      dspeed = float(sock_data["dspeed"]) 
-      dtrack = float(sock_data["dtrack"]) 
+      if sock_data["dlat"] in ['null']:
+        dlat = 0
+      else:
+        dlat = float(sock_data["dlat"])
+
+      if sock_data["dlon"] in ['null']:
+        dlon = 0
+      else:
+        dlon = float(sock_data["dlon"])
+      dspeed = sock_data["dspeed"]
+      dtrack = sock_data["dtrack"] 
       logging.warning("%s location at latitude : %s ; longitude : %s With speed : %s & Track : %s" % (dtime, dlat, dlon, dspeed, dtrack))
       
       DistanceANew = int(getDistance(a_latitude, a_longitude, dlat, dlon))
