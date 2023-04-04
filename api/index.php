@@ -77,8 +77,6 @@ switch ($task) {
 			'dist112' => $dist112
 		);
 
-		create_log($payload);
-
 		$curl = curl_init();
 		curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
 		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
@@ -91,12 +89,11 @@ switch ($task) {
 		create_log($result);
 	break;	
 
-
 	case "INS_DUEL":	
 		$sqlMy = "CALL sp_vehicle('".$task."','".$device."','".$route."','".$param."',".$plat.",".$plon.",".$pspeed.",".$ptrack.",".$dista.",".$distb.",".$dist040.",".$dist112.")";
 		mysqli_query($connMy,$sqlMy);
 		create_log($sqlMy);
-		if ($device='RXS112') {
+		if ($device == 'RXS112') {
 			switch ($route) {
 				case "RAJAWALI_SELATAN":	
 					$port1 = "OFF";
@@ -125,7 +122,7 @@ switch ($task) {
 			}
 		}
 
-		else if ($device='RXS040') {
+		else if ($device == 'RXS040') {
 			switch ($route) {
 				case "RAJAWALI_TENGAH":	
 					$port1 = "OFF";
@@ -154,13 +151,6 @@ switch ($task) {
 			}
 		}
 
-		else {
-			$port1 = "ON";
-			$port2 = "ON";
-			$port3 = "ON";
-			$port4 = "ON";			
-		}
-
 		$payload = array(	 
 			'task' => 'EXE_RELAY',
 			'device' => $device,
@@ -171,6 +161,9 @@ switch ($task) {
 			'port3' => $port3,
 			'port4' => $port4
 		); 
+
+		create_log($payload);
+
 
 		if(!($sock = socket_create(AF_INET, SOCK_STREAM, 0))) {
 			$errorcode = socket_last_error();
@@ -191,21 +184,20 @@ switch ($task) {
 		}
 		socket_close($sock);
 
-	break;
-
-
-
-	case "INS_DUELOFF":	
 
 		//Bagian kirim WA
 		$data_array=array();
 		$data = array(
 			'phone' => "6281234561013",
-			'message' => $message,
+			'message' => json_encode($payload),
+		);
+		array_push($data_array,$data);
+		$data = array(
+			'phone' => "628113361629",
+			'message' => json_encode($payload),
 		);
 		array_push($data_array,$data);
 
-		
 		$payload = array("data"=>$data_array);
 		$curl = curl_init();
 		$token = "fuHCim0Rp7zMW75JUlEsPJq2SC6f30EiDECVc2wQMwp6prnBTOfInuDiPpHx3IBW"; //6281554215822
@@ -245,7 +237,5 @@ function create_log($logc){
 	fwrite($flog,$msglog);
 	fclose($flog);
 }
-
-
 
 ?>

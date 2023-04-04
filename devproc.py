@@ -27,8 +27,7 @@ def sendapi(api_url,payload):
     requests.post(api_url, data=json.dumps(payload), timeout=2)
     logging.warning("Success connect to : %s " % (api_url))
   except requests.Timeout:
-    logging.warning("Timeout connect to : %s " % (api_url))
-    # back off and retry
+    logging.warning("Timeout connect to : %s " % (api_url)) # back off and retry
     pass
   except requests.ConnectionError:
     logging.warning("Connection Error to : %s " % (api_url))
@@ -151,17 +150,15 @@ host = 'localhost'                 # Get local machine name
 port = 8090                        # Reserve a port for your service.
 server_socket.bind((host, port))   # Bind to the port
 
-
 try:
   while True:
     logging.warning("========================================================")  
-    logging.warning("%s Waiting task on port : %s " % (deviceName, port))
+    logging.warning("%s %s Waiting task on port : %s " % (deviceID, deviceName, port))
     server_socket.listen(3)                 # Now wait for client connection.
     conn, address = server_socket.accept()  # accept new connection
     Msg = conn.recv(1024).decode()
-    if not Msg:
-          # if data is not received break
-        break
+    if not Msg:         
+      break # if data is not received break
       
     conn.close()  # close the connection
     MsgLen = len(Msg)
@@ -180,6 +177,7 @@ try:
         dlon = 0
       else:
         dlon = float(sock_data["dlon"])
+        
       dspeed = sock_data["dspeed"]
       dtrack = sock_data["dtrack"] 
       logging.warning("%s location at latitude : %s ; longitude : %s With speed : %s & Track : %s" % (dtime, dlat, dlon, dspeed, dtrack))
@@ -261,7 +259,6 @@ try:
         logging.warning("Distance from %s = %s => %s => %s " % (rx040_name, DistanceR040New, DistanceR040Old1, DistanceR040Old2))
         logging.warning("Destination = %s " % (TayoDestination))  
 
-
       else:
         logging.warning("XXXXX Berhenti XXXXXXX")
         
@@ -287,19 +284,32 @@ try:
       port2 = sock_data["port2"]
       port3 = sock_data["port3"]
       port4 = sock_data["port4"]
-
       logging.warning("Receive order %s ==> DUEL : %s : %s : %s : %s" % (lcsimpang, port1, port2, port3, port4))
 
       if lcsimpang == deviceID:
         logging.warning("Execute order %s ==> DUEL : %s : %s : %s : %s" % (lcsimpang, port1, port2, port3, port4))
+        if port1 == "OFF":
+          phase1.off()
+        else:
+          phase1.on()
 
+        if port2 == "OFF":
+          phase2.off()
+        else:
+          phase2.on()
 
-      #phase1.on()
-      #phase2.on()
-      #phase3.on()
-      #phase4.on()
+        if port3 == "OFF":
+          phase3.off()
+        else:
+          phase3.on()
 
+        if port4 == "OFF":
+          phase4.off()
+        else:
+          phase4.on()
 
+      else:
+        logging.warning("Mismatch ID %s <==> %s " % (lcsimpang, deviceID))
 
     elif task in ['EXIT']:
       exit()
