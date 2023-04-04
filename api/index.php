@@ -12,48 +12,49 @@ if ($connMy) {
 $data = json_decode(file_get_contents('php://input'), true);
 
 if (!$data) {
-	$sqlMy = "CALL sp_vehicle('GET_ID', '0', '0', 0, 0, 0, 0,'0')";
+	$sqlMy = "CALL sp_vehicle('GET_ID', 'device', 'route', 'param', 1, 2, 3, 4, 5, 6, 7, 8)";
 	$res = mysqli_query($connMy,$sqlMy);
 	$rec = mysqli_fetch_array($res,MYSQLI_ASSOC);
 	echo "ID: ".$rec['id']."  ".$rec['device_name']." ==== url: ".$rec['device_url']; 
 return;
 }
 
-$task = $data['task'];
-
-
 create_log($data);
 $sqlMy = "INSERT INTO api_log (id, json_task) VALUES(REPLACE(UUID(),'-',''),'".json_encode($data)."')";
 mysqli_query($connMy,$sqlMy);
+
+$task = $data['task'];
+$device = $data['device'];
+$route = $data['route'];
+$plat = $data['plat'];
+$plon = $data['plon'];
+$param = $data['param'];
+$pspeed = $data['pspeed'];
+$ptrack = $data['ptrack'];
+$dista = $data['dista'];
+$distb = $data['distb'];
+$dist040 = $data['dist040'];
+$dist112 = $data['dist112'];
+
 
 switch ($task) {
 	case "TX_REGISTER":
 	case "TX_LOG":
 	case "BEACON":	
-		$vehicle = $data['vehicle'];
-		$route = $data['route'];
-		$plat = $data['plat'];
-		$plon = $data['plon'];
-		$pspeed = $data['pspeed'];
-		$ptrack = $data['ptrack'];
-		$dista = $data['dista'];
-		$distb = $data['distb'];
-		$dist040 = $data['dist040'];
-		$dist112 = $data['dist112'];
-
-		$sqlMy = "CALL sp_vehicle('".$task."','".$vehicle."','".$route."',".$plat.",".$plon.",".$pspeed.",".$ptrack.",".$dista.",".$distb.",".$dist040.",".$dist112.")";
+		$sqlMy = "CALL sp_vehicle('".$task."','".$device."','".$route."','".$param."',".$plat.",".$plon.",".$pspeed.",".$ptrack.",".$dista.",".$distb.",".$dist040.",".$dist112.")";
 		mysqli_query($connMy,$sqlMy);
 		create_log($sqlMy);
 	break;
 
+	case "REQ_DUEL":
+		$sqlMy = "CALL sp_vehicle('".$task."','".$device."','".$route."','".$param."',".$plat.",".$plon.",".$pspeed.",".$ptrack.",".$dista.",".$distb.",".$dist040.",".$dist112.")";
+		mysqli_query($connMy,$sqlMy);
+		create_log($sqlMy);
 
-	case "REQ_DUELON":
-	case "REQ_DUELOFF":
-		$sqlMy = "SELECT * FROM mst_device WHERE id='".$route."'";
+		$sqlMy = "SELECT * FROM mst_device WHERE id='".$device."'";
 		$resMy = mysqli_query($connMy,$sqlMy);
 		if (!$resMy) create_log("Failed ".mysqli_error($connMy)." <> ".$sqlMy);
 		$rec=mysqli_fetch_array($resMy,MYSQLI_ASSOC);
-
 		$row_cnt = mysqli_num_rows($resMy);
 		if ($row_cnt == 0) {
 			echo "Simpang not found";
@@ -61,19 +62,22 @@ switch ($task) {
 		}
 
 		$device_url = $rec['device_url'];
-		echo $device_url;
-		$new_task = str_replace('REQ_', 'INS_', $task);
 		$payload = array(	 
-			'task' => $new_task,
-			'vehicle' => $vehicle,
+			'task' => 'INS_DUEL',
+			'device' => $device,
 			'route' => $route,
-			'data_latitude' => $latitude,
-			'data_longitude'=> $longitude ,
-			'data_speed' => $speed,
-			'data_track' => $track,
-			'destination' => $destination,
-			'timestamp' => date("Y-m-d h:i:sa")
+			'param' => $param,          
+			'plat' => $plat,
+			'plon' => $plon,
+			'pspeed' => $pspeed,
+			'ptrack' => $ptrack,
+			'dista' => $dista,
+			'distb' => $distb,
+			'dist040' => $dist040,
+			'dist112' => $dist112
 		);
+
+		create_log($payload);
 
 		$curl = curl_init();
 		curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
@@ -82,37 +86,117 @@ switch ($task) {
 		curl_setopt($curl, CURLOPT_URL, $device_url);
 		curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 0);
 		curl_setopt($curl, CURLOPT_TIMEOUT, 10);
-
 		$result = curl_exec($curl);
 		curl_close($curl);
 		create_log($result);
-		
+	break;	
+
+
+	case "INS_DUEL":	
+		$sqlMy = "CALL sp_vehicle('".$task."','".$device."','".$route."','".$param."',".$plat.",".$plon.",".$pspeed.",".$ptrack.",".$dista.",".$distb.",".$dist040.",".$dist112.")";
+		mysqli_query($connMy,$sqlMy);
+		create_log($sqlMy);
+		if ($device='RXS112') {
+			switch ($route) {
+				case "RAJAWALI_SELATAN":	
+					$port1 = "OFF";
+					$port2 = "ON";
+					$port3 = "ON";
+					$port4 = "ON";
+				break;
+				case "RAJAWALI_TENGAH":	
+					$port1 = "ON";
+					$port2 = "ON";
+					$port3 = "ON";
+					$port4 = "ON";
+				break;
+				case "PURABAYA_TENGAH":	
+					$port1 = "ON";
+					$port2 = "OFF";
+					$port3 = "ON";
+					$port4 = "ON";
+				break;
+				case "PURABAYA_SELATAN":	
+					$port1 = "ON";
+					$port2 = "ON";
+					$port3 = "ON";
+					$port4 = "ON";
+				break;
+			}
+		}
+
+		else if ($device='RXS040') {
+			switch ($route) {
+				case "RAJAWALI_TENGAH":	
+					$port1 = "OFF";
+					$port2 = "ON";
+					$port3 = "ON";
+					$port4 = "ON";
+				break;
+				case "RAJAWALI_UTARA":	
+					$port1 = "ON";
+					$port2 = "ON";
+					$port3 = "ON";
+					$port4 = "ON";
+				break;
+				case "PURABAYA_UTARA":	
+					$port1 = "OFF";
+					$port2 = "ON";
+					$port3 = "ON";
+					$port4 = "ON";
+				break;
+				case "PURABAYA_TENGAH":	
+					$port1 = "ON";
+					$port2 = "ON";
+					$port3 = "ON";
+					$port4 = "ON";
+				break;
+			}
+		}
+
+		else {
+			$port1 = "ON";
+			$port2 = "ON";
+			$port3 = "ON";
+			$port4 = "ON";			
+		}
+
+		$payload = array(	 
+			'task' => 'EXE_RELAY',
+			'device' => $device,
+			'route' => $route,
+			'param' => $param,          
+			'port1' => $port1,
+			'port2' => $port2,
+			'port3' => $port3,
+			'port4' => $port4
+		); 
+
+		if(!($sock = socket_create(AF_INET, SOCK_STREAM, 0))) {
+			$errorcode = socket_last_error();
+			$errormsg = socket_strerror($errorcode);
+			die("Couldn't create socket: [$errorcode] $errormsg \n");
+		}
+	
+		if(!socket_connect($sock , '127.0.0.1' , 8090)){
+			$errorcode = socket_last_error();
+			$errormsg = socket_strerror($errorcode);
+			die("Could not connect: [$errorcode] $errormsg \n");
+		}
+	
+		if( ! socket_send ( $sock , json_encode($payload) , strlen(json_encode($payload)) , 0)){
+			$errorcode = socket_last_error();
+			$errormsg = socket_strerror($errorcode);
+			die("Could not send data: [$errorcode] $errormsg \n");
+		}
+		socket_close($sock);
+
 	break;
 
 
 
-	case "INS_DUELON":
 	case "INS_DUELOFF":	
-		if(!($sock = socket_create(AF_INET, SOCK_STREAM, 0))) {
-			$errorcode = socket_last_error();
-    		$errormsg = socket_strerror($errorcode);
-    		die("Couldn't create socket: [$errorcode] $errormsg \n");
-		}
 
-		if(!socket_connect($sock , '127.0.0.1' , 8090)){
-			$errorcode = socket_last_error();
-    		$errormsg = socket_strerror($errorcode);
-    		die("Could not connect: [$errorcode] $errormsg \n");
-		}
-
-		$message = $task.",".$vehicle.",".$route.",".$latitude.",".$longitude.",".$speed.",".$track.",".$destination.",";
-		//Send the message to the server
-		if( ! socket_send ( $sock , $message , strlen($message) , 0)){
-			$errorcode = socket_last_error();
-    		$errormsg = socket_strerror($errorcode);
-    		die("Could not send data: [$errorcode] $errormsg \n");
-		}
-		socket_close($sock);
 		//Bagian kirim WA
 		$data_array=array();
 		$data = array(

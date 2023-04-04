@@ -11,67 +11,18 @@ from gpiozero import LED
 from sys import platform
 
 # Create and configure logger
-logging.basicConfig(filename = datetime.datetime.today().strftime('%Y%m%d') + ".log", 
+logging.basicConfig(filename = "/home/vehicle/poc/log/" + datetime.datetime.today().strftime('%Y%m%d') + ".log", 
                     format = '%(asctime)s : %(message)s', 
                     filemode = 'a',
                     level = logging.WARNING)
- 
 console = logging.StreamHandler()
 logging.getLogger('').addHandler(console)
 
 #Setting varibael
-deviceID = ""
-routeID = ""
-APIdata = ""
-curr_latitude = 0
-curr_longitude = 0
-curr_speed = 0
-curr_track = 0
-curr_route = 0
-curr_destination = 0
-DistanceR040Old1 = 0
-DistanceR112Old1 = 0
-DistanceAOld1 = 0
-DistanceAOld2 = 0
-DistanceBOld1 = 0
-DistanceBOld2 = 0
-
-TayoDestination = "Unknown"
-TayoLocation = "Unknown"
-
-running = True
-FirstRun = True
-control_url = ''
 local_url = 'http://127.0.0.1/api/'
-rx040_url = ''
-rx112_url = ''
 
 
 def sendapi(api_url,payload):
-  try:
-    requests.post(api_url, data=json.dumps(payload), timeout=2)
-    logging.warning("Success connect to : %s " % (api_url))
-  except requests.Timeout:
-    logging.warning("Timeout connect to : %s " % (api_url))
-    # back off and retry
-    pass
-  except requests.ConnectionError:
-    logging.warning("Connection Error to : %s " % (api_url))
-    pass
-
-
-
-def send(api_url,jobs,droute,ddest):
-  payload = {
-    'task':jobs,
-    'vehicle': deviceID,
-    "route": droute,
-    'data_latitude': curr_latitude,
-    'data_longitude': curr_longitude,
-    'data_speed': curr_speed,
-    'data_track': curr_track,
-    'destination': ddest
-  }
   try:
     requests.post(api_url, data=json.dumps(payload), timeout=2)
     logging.warning("Success connect to : %s " % (api_url))
@@ -98,14 +49,13 @@ def getDistance(lati1, long1, lati2, long2):
   return resDistance
 
 
-
 #######Start Main Code ################################################################################################
 #MySQL connect
 db = mysql.connector.connect(host="localhost", user="vehicle", passwd="DBvehicle", db="vehicle_db")
 dbcon = db.cursor()
 
 #Get Server Control ID ########################
-dbcon.callproc('sp_vehicle', ['GET_SERVER', 'deviceID', 'routeID', 1, 2, 3, 4, 5, 6, 7, 8])
+dbcon.callproc('sp_vehicle', ['GET_SERVER', 'device', 'route', 'param', 1, 2, 3, 4, 5, 6, 7, 8])
 for result in dbcon.stored_results():
   records = result.fetchall()
   for record in records:
@@ -113,7 +63,7 @@ for result in dbcon.stored_results():
 logging.warning("Got Server on : %s " % (control_url))
 
 #Get Device ID ########################
-dbcon.callproc('sp_vehicle', ['GET_ID', 'deviceID', 'routeID', 1, 2, 3, 4, 5, 6, 7, 8])
+dbcon.callproc('sp_vehicle', ['GET_ID', 'device', 'route', 'param', 1, 2, 3, 4, 5, 6, 7, 8])
 for result in dbcon.stored_results():
   records = result.fetchall()
   for record in records:
@@ -122,8 +72,8 @@ for result in dbcon.stored_results():
 logging.warning("Starting: %s === : %s on %s" % (deviceID, deviceName, sys.platform))
 
 #Get Simpang Profile ########################
-routeID = 40
-dbcon.callproc('sp_vehicle', ['GET_SIMPANG', 'deviceID', routeID, 1, 2, 3, 4, 5, 6, 7, 8])
+sparam = 40
+dbcon.callproc('sp_vehicle', ['GET_SIMPANG', 'device', 'route', sparam, 1, 2, 3, 4, 5, 6, 7, 8])
 for result in dbcon.stored_results():
   records = result.fetchall()
   for record in records:
@@ -134,8 +84,8 @@ for result in dbcon.stored_results():
     rx040_phase_ba = record[6]
     rx040_url = record[7]
 
-routeID = 112
-dbcon.callproc('sp_vehicle', ['GET_SIMPANG', 'deviceID', routeID, 1, 2, 3, 4, 5, 6, 7, 8])
+sparam = 112
+dbcon.callproc('sp_vehicle', ['GET_SIMPANG', 'deviceID', 'route', sparam, 1, 2, 3, 4, 5, 6, 7, 8])
 for result in dbcon.stored_results():
   records = result.fetchall()
   for record in records:
@@ -149,7 +99,7 @@ for result in dbcon.stored_results():
 ## Code for Transmitter / Bus Tayo  ################################################################################################
 routeID = deviceID[:4]
 if routeID in ['TXR1', 'TXR2', 'DTR1']:
-  dbcon.callproc('sp_vehicle', ['GET_ROUTE', 'deviceID', routeID, 1, 2, 3, 4, 5, 6, 7, 8])
+  dbcon.callproc('sp_vehicle', ['GET_ROUTE', 'deviceID', routeID, 'param', 1, 2, 3, 4, 5, 6, 7, 8])
   for result in dbcon.stored_results():
     records = result.fetchall()
     for record in records:
@@ -180,6 +130,8 @@ if routeID in ['TXR1', 'TXR2', 'DTR1']:
     'dist112': 0
   }
   sendapi(control_url, payload)
+  sendapi(local_url, payload)
+  
 
   
 #Code for Receiver / LC Simpang######################################################################################
@@ -217,7 +169,7 @@ try:
     sock_data = (json.loads(Msg))
     task = sock_data["task"]
 
-    if task in ['TX_PIPE']:
+    if task in ['TX_PIPE']: ########## Receive Data from GPS
       dtime = sock_data["dtime"] 
       if sock_data["dlat"] in ['null']:
         dlat = 0
@@ -329,17 +281,25 @@ try:
         }
       sendapi(control_url, payload)
    
-    elif task in ['INS_DUEL']:
+    elif task in ['EXE_RELAY']: ########## Receive Data from Controller to Relay
+      lcsimpang =  sock_data["device"]
       port1 = sock_data["port1"]
       port2 = sock_data["port2"]
       port3 = sock_data["port3"]
       port4 = sock_data["port4"]
+
+      logging.warning("Receive order %s ==> DUEL : %s : %s : %s : %s" % (lcsimpang, port1, port2, port3, port4))
+
+      if lcsimpang == deviceID:
+        logging.warning("Execute order %s ==> DUEL : %s : %s : %s : %s" % (lcsimpang, port1, port2, port3, port4))
+
+
       #phase1.on()
       #phase2.on()
       #phase3.on()
       #phase4.on()
 
-      logging.warning("Receive order DUEL : %s : %s : %s : %s" % (port1, port2, port3, port4))
+
 
     elif task in ['EXIT']:
       exit()
