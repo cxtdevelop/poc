@@ -186,18 +186,26 @@ switch ($task) {
 
 
 		//Bagian kirim WA
+		if( strpos(json_encode($payload), "OFF")) {
+			$pesan = "AKTIFFFFFF ".json_encode($payload) ;
+		}
+		else {
+			$pesan = "NORMAL ".json_encode($payload) ;
+		}
 		$data_array=array();
 		$data = array(
 			'phone' => "6281234561013",
-			'message' => json_encode($payload),
+			//'message' => json_encode($payload),
+			'message' => $pesan,
 		);
 		array_push($data_array,$data);
+		/*
 		$data = array(
 			'phone' => "628113361629",
 			'message' => json_encode($payload),
 		);
 		array_push($data_array,$data);
-
+		*/
 		$payload = array("data"=>$data_array);
 		$curl = curl_init();
 		$token = "fuHCim0Rp7zMW75JUlEsPJq2SC6f30EiDECVc2wQMwp6prnBTOfInuDiPpHx3IBW"; //6281554215822

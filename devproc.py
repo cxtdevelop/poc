@@ -30,13 +30,13 @@ DistanceR112Old1 = 0
 
 def sendapi(api_url,payload):
   try:
-    requests.post(api_url, data=json.dumps(payload), timeout=2)
-    logging.warning("Success connect to : %s " % (api_url))
+    requests.post(api_url, data=json.dumps(payload), timeout=3)
+    logging.warning("Success connect to : %s %s" % (api_url, payload))
   except requests.Timeout:
-    logging.warning("Timeout connect to : %s " % (api_url)) # back off and retry
+    logging.warning("Timeout connect to : %s %s" % (api_url, payload)) # back off and retry
     pass
   except requests.ConnectionError:
-    logging.warning("Connection Error to : %s " % (api_url))
+    logging.warning("Connection Error to : %s %s" % (api_url, payload))
     pass
 
 
@@ -135,7 +135,7 @@ if routeID in ['TXR1', 'TXR2', 'DTR1']:
     'dist112': 0
   }
   sendapi(control_url, payload)
-  sendapi(local_url, payload)
+  #sendapi(local_url, payload)
   
 
   
@@ -242,6 +242,7 @@ try:
             'dist112': DistanceR112New
           }
           sendapi(control_url, payload)
+          time.sleep(2)
 
         if (DistanceR040New < 200): #mendekati simpang pandegiling
           payload = {
@@ -259,6 +260,7 @@ try:
             'dist112': DistanceR112New
           }
           sendapi(control_url, payload)
+          time.sleep(2)
         logging.warning("Distance from A terminal %s = %s => %s => %s " % (a_name, DistanceANew, DistanceAOld1, DistanceAOld2))
         logging.warning("Distance from B terminal %s = %s => %s => %s " % (b_name, DistanceBNew, DistanceBOld1, DistanceBOld2))
         logging.warning("Distance from %s = %s => %s => %s" % (rx112_name, DistanceR112New, DistanceR112Old1, DistanceR112Old2))
