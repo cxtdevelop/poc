@@ -20,6 +20,9 @@ logging.getLogger('').addHandler(console)
 
 #Setting varibael
 local_url = 'http://127.0.0.1/api/'
+DistanceAOld1 = 0
+DistanceAOld2 = 0
+
 
 
 def sendapi(api_url,payload):
