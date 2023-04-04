@@ -11,12 +11,10 @@ from gpiozero import LED
 from sys import platform
 
 # Create and configure logger
-logging.basicConfig(filename = datetime.datetime.today().strftime('%Y-%m-%d') + ".log", 
+logging.basicConfig(filename = datetime.datetime.today().strftime('%Y%m%d') + ".log", 
                     format = '%(asctime)s : %(message)s', 
                     filemode = 'a',
                     level = logging.WARNING)
-#logger = logging.getLogger()     # Creating an object
-#=logger.setLevel(logging.DEBUG)   # Setting the threshold of logger to DEBUG
  
 console = logging.StreamHandler()
 logging.getLogger('').addHandler(console)
@@ -169,8 +167,9 @@ if routeID in ['TXR1', 'TXR2', 'DTR1']:
   logging.warning("Distance B terminal %s to %s = %s ; to %s = %s" % (b_name, rx112_name, DistanceBR112, rx040_name, DistanceBR040))
   payload = {
     'task':'TX_REGISTER',
-    'vehicle': deviceID,
+    'device': deviceID,
     'route': deviceName,
+    'param':'',
     'plat': 0,
     'plon': 0,
     'pspeed': 0,
@@ -271,39 +270,39 @@ try:
         TayoDestination = TayoDirection + "_" + TayoLocation
 
 
+        if (DistanceR112New < 200): #mendekati simpang bengawan
+          payload = {
+            'task':'REQ_DUEL',
+            'device': 'RXS112',
+            'route': TayoDestination,
+            'param': deviceID,
+            'plat': dlat,
+            'plon': dlon,
+            'pspeed': dspeed,
+            'ptrack': dtrack,
+            'dista': DistanceANew,
+            'distb': DistanceBNew,
+            'dist040': DistanceR040New,
+            'dist112': DistanceR112New
+          }
+          sendapi(control_url, payload)
 
-        if (TayoDestination == "RAJAWALI_SELATAN") and (DistanceR112New < 200):
-          logging.warning("11111111111111111111 Duel ON %s " % (rx112_name))
-          #send(control_url, "REQ_DUELON", "RXS112", TayoDestination)
-         
-        if (TayoDestination == "RAJAWALI_TENGAH") and (DistanceR112New < 200):
-          logging.warning("00000000000000000000 Duel OFF %s " % (rx112_name))
-          #send(control_url, "REQ_DUELOFF", "RXS112", TayoDestination)
-
-        if (TayoDestination == "RAJAWALI_TENGAH") and (DistanceR040New < 200):
-          logging.warning("11111111111111111111 Duel ON %s " % (rx040_name))
-          #send(control_url, "REQ_DUELON", "RXS040", TayoDestination)
-            
-        if (TayoDestination == "RAJAWALI_UTARA") and (DistanceR040New < 200):
-          logging.warning("00000000000000000000 Duel OFF  %s " % (rx040_name))
-          #send(control_url, "REQ_DUELOFF", "RXS040", TayoDestination)
-
-        if (TayoDestination == "PURABAYA_UTARA") and (DistanceR040New < 200):
-          logging.warning("11111111111111111111 Duel ON  %s " % (rx040_name))  
-          #send(control_url, "REQ_DUELON", "RXS040", TayoDestination)
-
-        if (TayoDestination == "PURABAYA_TENGAH") and (DistanceR040New < 200):
-          logging.warning("00000000000000000000 Duel OFF %s " % (rx040_name))
-          #send(control_url, "REQ_DUELOFF", "RXS040", TayoDestination)
-            
-        if (TayoDestination == "PURABAYA_TENGAH") and (DistanceR112New < 200):
-          logging.warning("11111111111111111111 Duel ON %s " % (rx112_name))
-          #send(control_url, "REQ_DUELON", "RXS112", TayoDestination)
-
-        if (TayoDestination == "PURABAYA_SELATAN") and (DistanceR112New < 200):
-          logging.warning("00000000000000000000 Duel OFF %s " % (rx112_name))
-          #send(control_url, "REQ_DUELOFF", "RXS112", TayoDestination)
-
+        if (DistanceR040New < 200): #mendekati simpang pandegiling
+          payload = {
+            'task':'REQ_DUEL',
+            'device': 'RXS040',
+            'route': TayoDestination,
+            'param': deviceID,
+            'plat': dlat,
+            'plon': dlon,
+            'pspeed': dspeed,
+            'ptrack': dtrack,
+            'dista': DistanceANew,
+            'distb': DistanceBNew,
+            'dist040': DistanceR040New,
+            'dist112': DistanceR112New
+          }
+          sendapi(control_url, payload)
         logging.warning("Distance from A terminal %s = %s => %s => %s " % (a_name, DistanceANew, DistanceAOld1, DistanceAOld2))
         logging.warning("Distance from B terminal %s = %s => %s => %s " % (b_name, DistanceBNew, DistanceBOld1, DistanceBOld2))
         logging.warning("Distance from %s = %s => %s => %s" % (rx112_name, DistanceR112New, DistanceR112Old1, DistanceR112Old2))
@@ -316,8 +315,9 @@ try:
         
       payload = {
           'task':'TX_LOG',
-          'vehicle': deviceID,
+          'device': deviceID,
           'route': TayoDestination,
+          'param': '',          
           'plat': dlat,
           'plon': dlon,
           'pspeed': dspeed,
@@ -329,7 +329,17 @@ try:
         }
       sendapi(control_url, payload)
    
+    elif task in ['INS_DUEL']:
+      port1 = sock_data["port1"]
+      port2 = sock_data["port2"]
+      port3 = sock_data["port3"]
+      port4 = sock_data["port4"]
+      #phase1.on()
+      #phase2.on()
+      #phase3.on()
+      #phase4.on()
 
+      logging.warning("Receive order DUEL : %s : %s : %s : %s" % (port1, port2, port3, port4))
 
     elif task in ['EXIT']:
       exit()

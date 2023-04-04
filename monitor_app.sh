@@ -35,8 +35,9 @@ if [ "$value" == "1" ]; then
    echo $DeviceName
 
    payload='{"task":"BEACON",
-            "vehicle":"'"$DeviceID"'",
+            "device":"'"$DeviceID"'",
             "route":"'"$DeviceName"'",
+            "param":"0",
             "plat":"0",
             "plon":"0",
             "pspeed":"0",

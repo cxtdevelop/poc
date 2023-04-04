@@ -3,7 +3,7 @@ header("Content-Type:application/json");
 header('Access-Control-Allow-Origin: *');
 date_default_timezone_set("Asia/Jakarta");
 
-$host = "192.168.1.23";
+$host = "127.0.0.1";
 $port = 8090;
 // No Timeout 
 set_time_limit(0);
