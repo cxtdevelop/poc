@@ -226,7 +226,7 @@ try:
         TayoDestination = TayoDirection + "_" + TayoLocation
 
 
-        if (DistanceR112New < 200): #mendekati simpang bengawan
+        if (DistanceR112New < 350): #mendekati simpang bengawan
           payload = {
             'task':'REQ_DUEL',
             'device': 'RXS112',
@@ -244,7 +244,7 @@ try:
           sendapi(control_url, payload)
           time.sleep(2)
 
-        if (DistanceR040New < 200): #mendekati simpang pandegiling
+        if (DistanceR040New < 350): #mendekati simpang pandegiling
           payload = {
             'task':'REQ_DUEL',
             'device': 'RXS040',
