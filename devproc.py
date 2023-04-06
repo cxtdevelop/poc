@@ -244,7 +244,7 @@ try:
           sendapi(control_url, payload)
           time.sleep(2)
 
-        if (DistanceR040New < 350): #mendekati simpang pandegiling
+        if (DistanceR040New < 300): #mendekati simpang pandegiling
           payload = {
             'task':'REQ_DUEL',
             'device': 'RXS040',

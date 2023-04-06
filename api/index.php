@@ -36,7 +36,6 @@ $distb = $data['distb'];
 $dist040 = $data['dist040'];
 $dist112 = $data['dist112'];
 
-
 switch ($task) {
 	case "TX_REGISTER":
 	case "TX_LOG":
@@ -119,6 +118,12 @@ switch ($task) {
 					$port3 = "ON";
 					$port4 = "ON";
 				break;
+				case "LOCALHOST":	
+					$port1 = "ON";
+					$port2 = "ON";
+					$port3 = "ON";
+					$port4 = "ON";
+				break;
 			}
 		}
 
@@ -143,6 +148,12 @@ switch ($task) {
 					$port4 = "ON";
 				break;
 				case "PURABAYA_TENGAH":	
+					$port1 = "ON";
+					$port2 = "ON";
+					$port3 = "ON";
+					$port4 = "ON";
+				break;
+				case "LOCALHOST":	
 					$port1 = "ON";
 					$port2 = "ON";
 					$port3 = "ON";
