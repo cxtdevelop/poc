@@ -76,7 +76,7 @@ fi
 
 #Normalisasi
 result=$(mysql -u vehicle -pDBvehicle -D vehicle_db -e "SELECT TIMESTAMPDIFF(SECOND, created_time, NOW()) VALUE FROM api_log WHERE json_task NOT LIKE '%LOCALHOST%' ORDER BY created_time DESC LIMIT 1")
-value=${result:6:3}
+value=${result:6:11}
 echo $value
 if [ "$value" -ge 60 ] && [ "$value" -le 300 ]; then
    echo "send LC...."

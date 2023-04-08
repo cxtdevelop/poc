@@ -92,74 +92,106 @@ switch ($task) {
 		$sqlMy = "CALL sp_vehicle('".$task."','".$device."','".$route."','".$param."',".$plat.",".$plon.",".$pspeed.",".$ptrack.",".$dista.",".$distb.",".$dist040.",".$dist112.")";
 		mysqli_query($connMy,$sqlMy);
 		create_log($sqlMy);
-		if ($device == 'RXS112') {
-			switch ($route) {
-				case "RAJAWALI_SELATAN":	
-					$port1 = "OFF";
-					$port2 = "ON";
-					$port3 = "ON";
-					$port4 = "ON";
-				break;
-				case "RAJAWALI_TENGAH":	
-					$port1 = "ON";
-					$port2 = "ON";
-					$port3 = "ON";
-					$port4 = "ON";
-				break;
-				case "PURABAYA_TENGAH":	
-					$port1 = "ON";
-					$port2 = "OFF";
-					$port3 = "ON";
-					$port4 = "ON";
-				break;
-				case "PURABAYA_SELATAN":	
-					$port1 = "ON";
-					$port2 = "ON";
-					$port3 = "ON";
-					$port4 = "ON";
-				break;
-				case "LOCALHOST":	
-					$port1 = "ON";
-					$port2 = "ON";
-					$port3 = "ON";
-					$port4 = "ON";
-				break;
-			}
-		}
+		switch ($device) {
+			case"RXS112" :
+				$distlc = $dist112;
+				switch ($route) {
+					case "RAJAWALI_SELATAN":	
+						$port1 = "OFF";
+						$port2 = "ON";
+						$port3 = "ON";
+						$port4 = "ON";
+					break;
+					case "RAJAWALI_TENGAH":	
+						$port1 = "ON";
+						$port2 = "ON";
+						$port3 = "ON";
+						$port4 = "ON";
+					break;
+					case "PURABAYA_TENGAH":	
+						$port1 = "ON";
+						$port2 = "OFF";
+						$port3 = "ON";
+						$port4 = "ON";
+					break;
+					case "PURABAYA_SELATAN":	
+						$port1 = "ON";
+						$port2 = "ON";
+						$port3 = "ON";
+						$port4 = "ON";
+					break;
+					case "LOCALHOST":	
+						$port1 = "ON";
+						$port2 = "ON";
+						$port3 = "ON";
+						$port4 = "ON";
+					break;
+				}
+			break;
 
-		else if ($device == 'RXS040') {
-			switch ($route) {
-				case "RAJAWALI_TENGAH":	
-					$port1 = "OFF";
-					$port2 = "ON";
-					$port3 = "ON";
-					$port4 = "ON";
-				break;
-				case "RAJAWALI_UTARA":	
-					$port1 = "ON";
-					$port2 = "ON";
-					$port3 = "ON";
-					$port4 = "ON";
-				break;
-				case "PURABAYA_UTARA":	
-					$port1 = "OFF";
-					$port2 = "ON";
-					$port3 = "ON";
-					$port4 = "ON";
-				break;
-				case "PURABAYA_TENGAH":	
-					$port1 = "ON";
-					$port2 = "ON";
-					$port3 = "ON";
-					$port4 = "ON";
-				break;
-				case "LOCALHOST":	
-					$port1 = "ON";
-					$port2 = "ON";
-					$port3 = "ON";
-					$port4 = "ON";
-				break;
-			}
+			case "RXS040" :
+				$distlc = $dist040;				
+				switch ($route) {
+					case "RAJAWALI_TENGAH":	
+						$port1 = "OFF";
+						$port2 = "ON";
+						$port3 = "ON";
+						$port4 = "ON";
+					break;
+					case "RAJAWALI_UTARA":	
+						$port1 = "ON";
+						$port2 = "ON";
+						$port3 = "ON";
+						$port4 = "ON";
+					break;
+					case "PURABAYA_UTARA":	
+						$port1 = "OFF";
+						$port2 = "ON";
+						$port3 = "ON";
+						$port4 = "ON";
+					break;
+					case "PURABAYA_TENGAH":	
+						$port1 = "ON";
+						$port2 = "ON";
+						$port3 = "ON";
+						$port4 = "ON";
+					break;
+					case "LOCALHOST":	
+						$port1 = "ON";
+						$port2 = "ON";
+						$port3 = "ON";
+						$port4 = "ON";
+					break;
+				}
+			break;
+
+			case "RXS999" :
+				$distlc = 999;				
+				switch ($route) {
+					case "RAJAWALI_SELATAN":	
+					case "RAJAWALI_TENGAH":
+					case "RAJAWALI_UTARA":	
+						$port1 = "OFF";
+						$port2 = "ON";
+						$port3 = "ON";
+						$port4 = "ON";
+					break;
+					case "PURABAYA_SELATAN":
+					case "PURABAYA_TENGAH":						
+					case "PURABAYA_UTARA":	
+						$port1 = "ON";
+						$port2 = "ON";
+						$port3 = "ON";
+						$port4 = "ON";
+					break;
+					case "LOCALHOST":	
+						$port1 = "ON";
+						$port2 = "ON";
+						$port3 = "ON";
+						$port4 = "ON";
+					break;
+				}
+			break;
 		}
 
 		$payload = array(	 
@@ -174,8 +206,6 @@ switch ($task) {
 		); 
 
 		create_log($payload);
-
-
 		if(!($sock = socket_create(AF_INET, SOCK_STREAM, 0))) {
 			$errorcode = socket_last_error();
 			$errormsg = socket_strerror($errorcode);
@@ -197,17 +227,34 @@ switch ($task) {
 
 
 		//Bagian kirim WA
-		if( strpos(json_encode($payload), "OFF")) {
-			$pesan = "AKTIFFFFFF ".json_encode($payload) ;
+		if ($route == "LOCALHOST"){
+			$wamsg = "Automatic Release Timer on LC ".$device." and order task ".$port1." : ".$port2." : ".$port3." : ".$port4;
 		}
 		else {
-			$pesan = "NORMAL ".json_encode($payload) ;
+			$wamsg = "Vehicle ".$param." destination ".substr($route,0,8)." on LC ".$device." distance ".$distlc." meters at location www.google.com/maps/?q=".$plat.",".$plon." and order task ".$port1." : ".$port2." : ".$port3." : ".$port4;
 		}
+
+
+		if( strpos(json_encode($payload), "OFF")) {
+			$pesan = "ENTER \r\n".$wamsg;
+		}
+		else {
+			$pesan = "EXIT \r\n".$wamsg;
+		}
+		
 		$data_array=array();
+		/*
 		$data = array(
 			'phone' => "6281234561013",
-			//'message' => json_encode($payload),
 			'message' => $pesan,
+		);*/
+		$data = array(
+			'phone' => "120363110785420110",
+			'message' => $pesan,
+			'secret' => "false",
+			'retry' => "false",
+			'priority' => "false",
+			'isGroup' => "true",
 		);
 		array_push($data_array,$data);
 		/*
@@ -230,10 +277,9 @@ switch ($task) {
 		curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
 		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($payload) );
-		curl_setopt($curl, CURLOPT_URL, "https://solo.wablas.com/api/v2/send-message");
+		curl_setopt($curl, CURLOPT_URL, "https://solo.wablas.com/api/v2/send-message");	
 		curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
 		curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
-	 
 		$result = curl_exec($curl);
 		curl_close($curl);
 		//Bagian kirim WA

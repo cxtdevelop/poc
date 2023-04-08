@@ -24,7 +24,11 @@ DistanceAOld1 = 0
 DistanceBOld1 = 0
 DistanceR040Old1 = 0
 DistanceR112Old1 = 0
-
+DistanceANew = 0
+DistanceBNew = 0
+DistanceR040New = 0
+DistanceR112New = 0
+TayoDestination = "Unknown_Unknown"
 
 
 
@@ -187,13 +191,13 @@ try:
       dspeed = sock_data["dspeed"]
       dtrack = sock_data["dtrack"] 
       logging.warning("%s location at latitude : %s ; longitude : %s With speed : %s & Track : %s" % (dtime, dlat, dlon, dspeed, dtrack))
-      
-      DistanceANew = int(getDistance(a_latitude, a_longitude, dlat, dlon))
-      DistanceBNew = int(getDistance(b_latitude, b_longitude, dlat, dlon))
-      DistanceR040New = int(getDistance(rx040_latitude, rx040_longitude, dlat, dlon))
-      DistanceR112New = int(getDistance(rx112_latitude, rx112_longitude, dlat, dlon))
-      #logging.warning("=====================================================================")
-      logging.warning("Distance to cek point : %s : %s ; %s : %s ; %s : %s ; %s : %s" 
+      if (dlat != 0) :
+        DistanceANew = int(getDistance(a_latitude, a_longitude, dlat, dlon))
+        DistanceBNew = int(getDistance(b_latitude, b_longitude, dlat, dlon))
+        DistanceR040New = int(getDistance(rx040_latitude, rx040_longitude, dlat, dlon))
+        DistanceR112New = int(getDistance(rx112_latitude, rx112_longitude, dlat, dlon))
+        #logging.warning("=====================================================================")
+        logging.warning("Distance to cek point : %s : %s ; %s : %s ; %s : %s ; %s : %s" 
                       % (a_name, DistanceANew, rx112_name, DistanceR112New, rx040_name, DistanceR040New, b_name, DistanceBNew))
       
       if ((DistanceANew - DistanceAOld1) > 10) or ((DistanceBNew - DistanceBOld1) > 10): # Ada pergerakan 
